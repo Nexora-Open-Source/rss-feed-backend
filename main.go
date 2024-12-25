@@ -1,3 +1,23 @@
+/*
+Package main initializes the RSS Feed backend server.
+
+This backend provides APIs to fetch and store RSS feed data and retrieve predefined feed sources.
+It uses Google Cloud Datastore for storage and supports parsing RSS feeds via the `gofeed` library.
+
+Key Features:
+  - Fetch RSS feeds from a URL.
+  - Store parsed feeds in Google Cloud Datastore.
+  - Retrieve predefined or categorized RSS feed sources.
+  - Designed for easy integration with frontend applications.
+
+Run the application:
+
+	$ go run main.go
+
+Endpoints:
+  - GET /fetch-store?url=<rss-url>: Fetch and store RSS feed data.
+  - GET /feeds: Retrieve predefined RSS feed sources.
+*/
 package main
 
 import (

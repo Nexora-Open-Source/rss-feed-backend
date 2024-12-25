@@ -1,3 +1,19 @@
+/*
+Package utils provides utility functions for RSS feed parsing.
+
+Key Functions:
+  - FetchRSSFeed: Parses an RSS feed from a URL and returns a slice of feed items.
+
+Dependencies:
+  - Uses the `gofeed` library for RSS parsing.
+
+Usage:
+
+	items, err := FetchRSSFeed("https://example.com/rss")
+	if err != nil {
+	    log.Fatalf("Failed to fetch RSS feed: %v", err)
+	}
+*/
 package utils
 
 import (
@@ -14,7 +30,29 @@ type FeedItem struct {
 	PubDate     string `datastore:"pub_date"`
 }
 
-// FetchRSSFeed fetches and parses an RSS feed from the given URL
+/*
+FetchRSSFeed fetches and parses an RSS feed from the given URL.
+
+Parameters:
+  - url: The URL of the RSS feed.
+
+Returns:
+  - A slice of FeedItem objects containing parsed RSS feed data.
+  - An error if parsing fails.
+
+Example:
+
+	items, err := FetchRSSFeed("https://example.com/rss")
+	if err != nil {
+	    log.Fatalf("Failed to fetch RSS feed: %v", err)
+	}
+
+FeedItem Structure:
+  - Title:       The title of the RSS feed item.
+  - Link:        The URL link to the original article.
+  - Description: A short description of the RSS feed item.
+  - PubDate:     The publication date of the RSS feed item.
+*/
 func FetchRSSFeed(url string) ([]*FeedItem, error) {
 	parser := gofeed.NewParser()
 	feed, err := parser.ParseURL(url)
