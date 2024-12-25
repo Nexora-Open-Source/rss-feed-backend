@@ -11,7 +11,16 @@ type FeedSource struct {
 	URL  string `json:"url"`
 }
 
-// HandleGetFeeds provides a list of predefined RSS feeds
+/*
+HandleGetFeeds returns a list of predefined RSS feed sources.
+
+Example:
+
+	GET /feeds
+
+Response:
+  - 200 OK: A JSON array of predefined feed sources.
+*/
 func HandleGetFeeds(w http.ResponseWriter, r *http.Request) {
 
 	feeds := []FeedSource{

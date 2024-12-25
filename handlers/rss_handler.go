@@ -1,3 +1,16 @@
+/*
+Package handlers contains the core HTTP handlers for fetching, storing, and retrieving RSS feed data.
+
+Key Functions:
+  - HandleFetchAndStore: Fetches an RSS feed from a URL and stores the parsed items in Google Cloud Datastore.
+  - HandleGetFeeds: Provides a list of predefined RSS feed sources.
+
+Usage:
+
+	Import the package and register handlers in your router:
+	  router.HandleFunc("/fetch-store", handlers.HandleFetchAndStore).Methods("GET")
+	  router.HandleFunc("/feeds", handlers.HandleGetFeeds).Methods("GET")
+*/
 package handlers
 
 import (
@@ -33,7 +46,21 @@ func init() {
 	}
 }
 
-// HandleFetchAndStore handles fetching and storing RSS feeds
+/*
+HandleFetchAndStore fetches an RSS feed from the given URL and stores the parsed items in Google Cloud Datastore.
+
+Query Parameters:
+  - url: The URL of the RSS feed to fetch.
+
+Example:
+
+	GET /fetch-store?url=https://example.com/rss
+
+Response:
+  - 200 OK: Feed items saved successfully.
+  - 400 Bad Request: Missing or invalid URL parameter.
+  - 500 Internal Server Error: Failed to fetch or store feed items.
+*/
 func HandleFetchAndStore(w http.ResponseWriter, r *http.Request) {
 
 	// Get the RSS feed URL from querty params
