@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	"github.com/rss-feed-backend/utils"
+	"github.com/Nexora-Open-Source/rss-feed-backend/utils"
 
 	"cloud.google.com/go/datastore"
 )

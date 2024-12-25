@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/rss-feed-backend/handlers"
+	"github.com/Nexora-Open-Source/rss-feed-backend/handlers"
 
 	"github.com/gorilla/mux"
 )

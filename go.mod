@@ -1,4 +1,4 @@
-module github.com/rss-feed-backend
+module github.com/Nexora-Open-Source/rss-feed-backend
 
 go 1.23.4
 
