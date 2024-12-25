@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"rss-feed-backend/handlers"
+	"github.com/rss-feed-backend/handlers"
 
 	"github.com/gorilla/mux"
 )

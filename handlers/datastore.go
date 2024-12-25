@@ -2,7 +2,8 @@ package handlers
 
 import (
 	"context"
-	"rss-feed-backend/utils"
+
+	"github.com/rss-feed-backend/utils"
 
 	"cloud.google.com/go/datastore"
 )
