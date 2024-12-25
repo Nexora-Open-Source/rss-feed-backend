@@ -1,1 +1,6 @@
 .env
+.gcloudignore  
+app.yaml
+
+
+*.exe
