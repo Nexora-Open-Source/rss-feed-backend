@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"rss-feed-backend/utils"
+	"github.com/rss-feed-backend/utils"
 
 	"cloud.google.com/go/datastore"
 	"github.com/joho/godotenv"
