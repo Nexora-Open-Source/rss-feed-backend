@@ -15,6 +15,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -84,5 +85,6 @@ func HandleFetchAndStore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, "Feed items saved successfully")
+	json.NewEncoder(w).Encode(feedItems)
+	//fmt.Fprintln(w, "Feed items saved successfully")
 }
