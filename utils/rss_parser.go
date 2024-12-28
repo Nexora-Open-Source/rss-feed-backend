@@ -27,6 +27,7 @@ type FeedItem struct {
 	Title       string `datastore:"title"`
 	Link        string `datastore:"link"`
 	Description string `datastore:"description"`
+	Author      string `datastore:"author"`
 	PubDate     string `datastore:"pub_date"`
 }
 
@@ -67,6 +68,7 @@ func FetchRSSFeed(url string) ([]*FeedItem, error) {
 			Title:       entry.Title,
 			Link:        entry.Link,
 			Description: entry.Description,
+			Author:      entry.Author.Name,
 			PubDate:     pubDate.Format(time.RFC3339),
 		})
 	}
