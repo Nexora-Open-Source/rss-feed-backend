@@ -1,0 +1,23 @@
+[
+    { "name": "TechCrunch", "url": "https://techcrunch.com/feed/" },
+    { "name": "BBC News", "url": "http://feeds.bbci.co.uk/news/rss.xml" },
+    { "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml" },
+    { "name": "CNN Top Stories", "url": "http://rss.cnn.com/rss/edition.rss" },
+    { "name": "New York Times", "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml" },
+    { "name": "Reuters", "url": "http://feeds.reuters.com/reuters/topNews" },
+    { "name": "Hacker News", "url": "https://hnrss.org/frontpage" },
+    { "name": "NPR News", "url": "https://www.npr.org/rss/rss.php?id=1001" },
+    { "name": "Wired", "url": "https://www.wired.com/feed/rss" },
+    { "name": "ESPN", "url": "https://www.espn.com/espn/rss/news" },
+    { "name": "The Guardian", "url": "https://www.theguardian.com/world/rss" },
+    { "name": "CNET", "url": "https://www.cnet.com/rss/news/" },
+    { "name": "Mashable", "url": "https://mashable.com/feed" },
+    { "name": "Engadget", "url": "https://www.engadget.com/rss.xml" },
+    { "name": "Google News - World", "url": "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en" },
+    { "name": "Science Daily", "url": "https://www.sciencedaily.com/rss/all.xml" },
+    { "name": "National Geographic", "url": "https://www.nationalgeographic.com/content/natgeo/en_us/rss/index.rss" },
+    { "name": "TechRadar", "url": "https://www.techradar.com/rss" },
+    { "name": "VentureBeat", "url": "https://venturebeat.com/feed/" },
+    { "name": "Politico", "url": "https://www.politico.com/rss/politics08.xml" }
+  ]
+  
