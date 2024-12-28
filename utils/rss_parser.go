@@ -24,11 +24,11 @@ import (
 
 // FeedItem represents an RSS feed item
 type FeedItem struct {
-	Title       string `datastore:"title"`
+	Title       string `datastore:"title,noindex"` // noindex to exclude from indexes
 	Link        string `datastore:"link"`
-	Description string `datastore:"description"`
-	Author      string `datastore:"author"`
-	PubDate     string `datastore:"pub_date"`
+	Description string `datastore:"description,noindex"`
+	Author      string `datastore:"author,noindex"`
+	PubDate     string `datastore:"pub_date,noindex"`
 }
 
 /*
