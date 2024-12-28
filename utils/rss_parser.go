@@ -68,9 +68,16 @@ func FetchRSSFeed(url string) ([]*FeedItem, error) {
 			Title:       entry.Title,
 			Link:        entry.Link,
 			Description: entry.Description,
-			Author:      entry.Author.Name,
+			Author:      handleAuthor(entry),
 			PubDate:     pubDate.Format(time.RFC3339),
 		})
 	}
 	return items, nil
+}
+
+func handleAuthor(entry *gofeed.Item) string {
+	if entry.Author != nil {
+		return entry.Author.Name
+	}
+	return "Unknown"
 }
