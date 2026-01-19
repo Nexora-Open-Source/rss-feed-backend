@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"os"
+
+	"github.com/Nexora-Open-Source/rss-feed-backend/middleware"
+	"github.com/Nexora-Open-Source/rss-feed-backend/utils"
+	"github.com/sirupsen/logrus"
 )
 
 // FeedSource represents a predefined RSS feed source
@@ -13,25 +16,39 @@ type FeedSource struct {
 	URL  string `json:"url"`
 }
 
-/*
-HandleGetFeeds returns a list of predefined RSS feed sources from a JSON file.
+// @Summary Get predefined RSS feed sources
+// @Description Returns a list of predefined RSS feed sources from a JSON file.
+// @Tags RSS Feed Operations
+// @Accept json
+// @Produce json
+// @Success 200 {array} FeedSource "List of predefined feed sources"
+// @Failure 500 {object} middleware.APIError "Internal server error"
+// @Router /feeds [get]
+func (h *Handler) HandleGetFeeds(w http.ResponseWriter, r *http.Request) {
+	requestID := r.Header.Get("X-Request-ID")
+	if requestID == "" {
+		requestID = utils.GenerateRequestID()
+		w.Header().Set("X-Request-ID", requestID)
+	}
 
-Example:
+	// Log the request
+	middleware.Logger.WithFields(logrus.Fields{
+		"request_id": requestID,
+		"action":     "get_feeds",
+	}).Info("Processing feed list request")
 
-	GET /feeds
-
-Response:
-  - 200 OK: A JSON array of predefined feed sources.
-*/
-func HandleGetFeeds(w http.ResponseWriter, r *http.Request) {
 	// Define the path to the JSON file
 	filePath := "data/feeds.json"
 
 	// Open the JSON file
 	file, err := os.Open(filePath)
 	if err != nil {
-		log.Printf("Error opening feeds.json file: %v", err)
-		http.Error(w, "Unable to load feeds", http.StatusInternalServerError)
+		middleware.Logger.WithFields(logrus.Fields{
+			"request_id": requestID,
+			"file_path":  filePath,
+			"error":      err.Error(),
+		}).Error("Error opening feeds.json file")
+		middleware.RespondInternalError(w, err, requestID)
 		return
 	}
 	defer file.Close()
@@ -39,12 +56,23 @@ func HandleGetFeeds(w http.ResponseWriter, r *http.Request) {
 	// Decode the JSON data
 	var feeds []FeedSource
 	if err := json.NewDecoder(file).Decode(&feeds); err != nil {
-		log.Printf("Error decoding feeds.json file: %v", err)
-		http.Error(w, "Invalid feeds format", http.StatusInternalServerError)
+		middleware.Logger.WithFields(logrus.Fields{
+			"request_id": requestID,
+			"file_path":  filePath,
+			"error":      err.Error(),
+		}).Error("Error decoding feeds.json file")
+		middleware.RespondInternalError(w, err, requestID)
 		return
 	}
 
+	// Log successful completion
+	middleware.Logger.WithFields(logrus.Fields{
+		"request_id":  requestID,
+		"feeds_count": len(feeds),
+	}).Info("Feed list retrieved successfully")
+
 	// Respond with the list of feeds
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(feeds)
 }

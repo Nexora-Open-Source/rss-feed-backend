@@ -1,0 +1,79 @@
+# Datastore indexes for RSS Feed Backend
+# This file defines the indexes needed for optimal query performance
+
+indexes:
+
+  # Index for fetching feed items ordered by publication date (most common query)
+  - kind: FeedItem
+    properties:
+    - name: pub_date
+      direction: desc
+
+  # Composite index for filtering by source and ordering by publication date
+  - kind: FeedItem
+    properties:
+    - name: link
+    - name: pub_date
+      direction: desc
+
+  # Composite index for filtering by author and ordering by publication date
+  - kind: FeedItem
+    properties:
+    - name: author
+    - name: pub_date
+      direction: desc
+
+  # Composite index for date range queries with publication date ordering
+  - kind: FeedItem
+    properties:
+    - name: pub_date
+    - name: pub_date
+      direction: desc
+
+  # Index for cleanup operations - finding items older than specific date
+  - kind: FeedItem
+    properties:
+    - name: pub_date
+
+  # Index for statistics queries - items by date ranges
+  - kind: FeedItem
+    properties:
+    - name: pub_date
+      direction: asc
+
+  # Index for link-based queries (duplicate detection)
+  - kind: FeedItem
+    properties:
+    - name: link
+
+  # Composite index for advanced filtering (source + date range)
+  - kind: FeedItem
+    properties:
+    - name: link
+    - name: pub_date
+    - name: pub_date
+      direction: desc
+
+  # Composite index for author + date range filtering
+  - kind: FeedItem
+    properties:
+    - name: author
+    - name: pub_date
+    - name: pub_date
+      direction: desc
+
+  # Index for pagination with cursor support
+  - kind: FeedItem
+    properties:
+    - name: pub_date
+      direction: desc
+    - name: __key__
+      direction: asc
+
+  # Index for efficient cleanup by date ranges
+  - kind: FeedItem
+    properties:
+    - name: pub_date
+      direction: asc
+    - name: __key__
+      direction: asc
