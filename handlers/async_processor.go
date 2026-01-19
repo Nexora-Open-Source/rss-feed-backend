@@ -39,6 +39,8 @@ type AsyncProcessor struct {
 	wg              sync.WaitGroup
 	jobStatus       map[string]*types.AsyncJobStatus
 	statusMutex     sync.RWMutex
+	shutdownMutex   sync.RWMutex // Add mutex for shutdown flag
+	shuttingDown    bool         // Add shutdown flag
 	logger          *logrus.Logger
 	datastoreClient *datastore.Client
 	cacheManager    *cache.CacheManager
@@ -47,6 +49,8 @@ type AsyncProcessor struct {
 	rejectThreshold     float64
 	waitTimeout         time.Duration
 	queueSize           int
+	cleanupQuit         chan bool // Add quit channel for cleanup goroutine
+	resultsQuit         chan bool // Add quit channel for results
 }
 
 // NewAsyncProcessor creates a new async processor with the given parameters
@@ -55,6 +59,8 @@ func NewAsyncProcessor(workers, queueSize int, backpressureEnabled bool, rejectT
 		jobs:                make(chan AsyncJob, queueSize),
 		results:             make(chan AsyncJobResult, queueSize),
 		quit:                make(chan bool),
+		cleanupQuit:         make(chan bool),
+		resultsQuit:         make(chan bool),
 		jobStatus:           make(map[string]*types.AsyncJobStatus),
 		logger:              logger,
 		datastoreClient:     datastoreClient,
@@ -79,6 +85,7 @@ func NewAsyncProcessor(workers, queueSize int, backpressureEnabled bool, rejectT
 	go processor.resultProcessor()
 
 	// Start cleanup goroutine
+	processor.wg.Add(1)
 	go processor.cleanupOldJobs()
 
 	return processor
@@ -180,6 +187,26 @@ func (ap *AsyncProcessor) worker(workerID int) {
 	}
 }
 
+// safeSendResult safely sends a result to the results channel
+func (ap *AsyncProcessor) safeSendResult(result AsyncJobResult) {
+	ap.shutdownMutex.RLock()
+	shuttingDown := ap.shuttingDown
+	ap.shutdownMutex.RUnlock()
+
+	if shuttingDown {
+		ap.logger.WithField("job_id", result.JobID).Debug("Dropping result due to shutdown")
+		return
+	}
+
+	select {
+	case ap.results <- result:
+		// Result sent successfully
+	case <-ap.resultsQuit:
+		// Results processor is shutting down, don't block
+		ap.logger.WithField("job_id", result.JobID).Debug("Dropping result due to shutdown")
+	}
+}
+
 // processJob processes a single job
 func (ap *AsyncProcessor) processJob(workerID int, job AsyncJob) {
 	startTime := time.Now()
@@ -212,7 +239,7 @@ func (ap *AsyncProcessor) processJob(workerID int, job AsyncJob) {
 			monitoring.RecordAsyncJob("completed", time.Since(startTime).Seconds())
 			monitoring.RecordFeedFetch(job.URL, "cache_hit", time.Since(startTime).Seconds(), len(cachedItems))
 
-			ap.results <- result
+			ap.safeSendResult(result)
 			return
 		}
 		monitoring.RecordCacheMiss("get_feed_items")
@@ -234,7 +261,7 @@ func (ap *AsyncProcessor) processJob(workerID int, job AsyncJob) {
 		monitoring.RecordAsyncJob("failed", time.Since(startTime).Seconds())
 		monitoring.RecordFeedFetch(job.URL, "failed", time.Since(startTime).Seconds(), -1)
 
-		ap.results <- result
+		ap.safeSendResult(result)
 		return
 	}
 
@@ -310,26 +337,40 @@ func (ap *AsyncProcessor) processJob(workerID int, job AsyncJob) {
 func (ap *AsyncProcessor) resultProcessor() {
 	defer ap.wg.Done()
 
-	for result := range ap.results {
-		status := "completed"
-		errorMsg := ""
-		itemsCount := len(result.Items)
+	for {
+		select {
+		case result := <-ap.results:
+			status := "completed"
+			errorMsg := ""
+			itemsCount := len(result.Items)
 
-		if result.Error != nil {
-			status = "failed"
-			errorMsg = result.Error.Error()
-			itemsCount = 0
+			if result.Error != nil {
+				status = "failed"
+				errorMsg = result.Error.Error()
+				itemsCount = 0
+			}
+
+			ap.updateJobStatus(result.JobID, status, errorMsg, itemsCount, result.Duration.Milliseconds())
+
+			ap.logger.WithFields(logrus.Fields{
+				"job_id":      result.JobID,
+				"url":         result.URL,
+				"status":      status,
+				"items_count": itemsCount,
+				"duration_ms": result.Duration.Milliseconds(),
+			}).Info("Async job result processed")
+		case <-ap.quit:
+			// Drain remaining results before exiting
+			for len(ap.results) > 0 {
+				result := <-ap.results
+				if result.Error != nil {
+					ap.updateJobStatus(result.JobID, "failed", result.Error.Error(), 0, result.Duration.Milliseconds())
+				} else {
+					ap.updateJobStatus(result.JobID, "completed", "", len(result.Items), result.Duration.Milliseconds())
+				}
+			}
+			return
 		}
-
-		ap.updateJobStatus(result.JobID, status, errorMsg, itemsCount, result.Duration.Milliseconds())
-
-		ap.logger.WithFields(logrus.Fields{
-			"job_id":      result.JobID,
-			"url":         result.URL,
-			"status":      status,
-			"items_count": itemsCount,
-			"duration_ms": result.Duration.Milliseconds(),
-		}).Info("Async job result processed")
 	}
 }
 
@@ -350,25 +391,33 @@ func (ap *AsyncProcessor) updateJobStatus(jobID, status, errorMsg string, itemsC
 
 // cleanupOldJobs removes old job statuses
 func (ap *AsyncProcessor) cleanupOldJobs() {
+	defer ap.wg.Done()
+
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		ap.statusMutex.Lock()
-		cutoff := time.Now().Add(-24 * time.Hour)
-		removed := 0
+	for {
+		select {
+		case <-ticker.C:
+			ap.statusMutex.Lock()
+			cutoff := time.Now().Add(-24 * time.Hour)
+			removed := 0
 
-		for jobID, jobStatus := range ap.jobStatus {
-			if jobStatus.CreatedAt.Before(cutoff) {
-				delete(ap.jobStatus, jobID)
-				removed++
+			for jobID, jobStatus := range ap.jobStatus {
+				if jobStatus.CreatedAt.Before(cutoff) {
+					delete(ap.jobStatus, jobID)
+					removed++
+				}
 			}
-		}
 
-		ap.statusMutex.Unlock()
+			ap.statusMutex.Unlock()
 
-		if removed > 0 {
-			ap.logger.WithField("removed_count", removed).Info("Cleaned up old async job statuses")
+			if removed > 0 {
+				ap.logger.WithField("removed_count", removed).Info("Cleaned up old async job statuses")
+			}
+		case <-ap.cleanupQuit:
+			ap.logger.Info("Cleanup goroutine stopping")
+			return
 		}
 	}
 }
@@ -376,8 +425,17 @@ func (ap *AsyncProcessor) cleanupOldJobs() {
 // Stop gracefully shuts down the async processor
 func (ap *AsyncProcessor) Stop() {
 	ap.logger.Info("Stopping async processor")
+
+	// Set shutdown flag first
+	ap.shutdownMutex.Lock()
+	ap.shuttingDown = true
+	ap.shutdownMutex.Unlock()
+
+	close(ap.cleanupQuit) // Signal cleanup goroutine to stop
+	close(ap.resultsQuit) // Signal result senders to stop
 	close(ap.quit)
 	close(ap.jobs)
+	close(ap.results) // Close results channel to signal resultProcessor
 	ap.wg.Wait()
 	ap.logger.Info("Async processor stopped")
 }

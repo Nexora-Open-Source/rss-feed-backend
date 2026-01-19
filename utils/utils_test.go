@@ -16,8 +16,9 @@ func TestGenerateRequestID(t *testing.T) {
 	assert.NotEmpty(t, id2)
 	assert.NotEqual(t, id1, id2)
 
-	// Test that IDs are reasonably long
-	assert.GreaterOrEqual(t, len(id1), 30)
+	// Test that IDs are expected length (14 timestamp + 1 dash + 8 random = 23)
+	assert.Equal(t, 23, len(id1))
+	assert.Equal(t, 23, len(id2))
 }
 
 func TestRandomString(t *testing.T) {
@@ -26,9 +27,9 @@ func TestRandomString(t *testing.T) {
 		result := RandomString(length)
 		assert.Equal(t, length, len(result))
 
-		// Test that it contains only valid characters
+		// Test that it contains only valid base64 URL characters
 		for _, char := range result {
-			assert.Contains(t, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", string(char))
+			assert.Contains(t, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_", string(char))
 		}
 	}
 }

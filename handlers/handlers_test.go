@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"cloud.google.com/go/datastore"
+	"github.com/Nexora-Open-Source/rss-feed-backend/middleware"
 	"github.com/Nexora-Open-Source/rss-feed-backend/types"
 	"github.com/Nexora-Open-Source/rss-feed-backend/utils"
 	"github.com/sirupsen/logrus"
@@ -98,6 +99,9 @@ func setupTestHandler(t *testing.T) (*Handler, *MockDatastoreClient, *MockCacheM
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
+
+	// Initialize middleware logger for tests
+	middleware.Logger = logger
 
 	handler := &Handler{
 		DatastoreClient: mockDatastore,

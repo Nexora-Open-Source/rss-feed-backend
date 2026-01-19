@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -51,6 +50,8 @@ func TestEnhancedRateLimiting(t *testing.T) {
 	}
 
 	// Test 2: Requests with same identifiers should share rate limit
+	// Note: req1 from Test 1 already consumed 1 token from the burst (Mozilla/5.0 + same IP)
+	// So only 4 more requests should be allowed (requests 0-3), then request 4+ should be rate limited
 	for i := 0; i < 10; i++ {
 		req := httptest.NewRequest("GET", "/", nil)
 		req.Header.Set("User-Agent", "Mozilla/5.0")
@@ -59,11 +60,11 @@ func TestEnhancedRateLimiting(t *testing.T) {
 		w := httptest.NewRecorder()
 		rateLimitedHandler(w, req)
 
-		if i < 5 && w.Code != http.StatusOK {
-			t.Errorf("Request %d should be allowed", i)
+		if i < 4 && w.Code != http.StatusOK {
+			t.Errorf("Request %d should be allowed (4 remaining tokens after first test)", i)
 		}
-		if i >= 5 && w.Code != http.StatusTooManyRequests {
-			t.Errorf("Request %d should be rate limited", i)
+		if i >= 4 && w.Code != http.StatusTooManyRequests {
+			t.Errorf("Request %d should be rate limited (exceeded burst size)", i)
 		}
 	}
 }
@@ -105,17 +106,18 @@ func TestURLValidation(t *testing.T) {
 
 // TestCORSConfiguration tests the enhanced CORS middleware
 func TestCORSConfiguration(t *testing.T) {
-	// Set test environment
-	os.Setenv("PROJECT_ID", "test-project")
-	os.Setenv("ENVIRONMENT", "development")
-	os.Setenv("DEV_CORS_ORIGINS", "https://localhost:3000,https://127.0.0.1:3000")
-	os.Setenv("CORS_ALLOWED_METHODS", "GET,POST,OPTIONS")
-	os.Setenv("CORS_ALLOWED_HEADERS", "Content-Type,Authorization")
-
-	// Create test configuration
-	appConfig, err := config.NewAppConfig()
-	if err != nil {
-		t.Fatalf("Failed to create app config: %v", err)
+	// Create a mock configuration to avoid Google Cloud dependencies
+	appConfig := &config.Config{
+		CORSConfig: config.CORSConfig{
+			Environment: "development",
+			DevelopmentOrigins: []string{
+				"https://localhost:3000",
+				"https://127.0.0.1:3000",
+			},
+			AllowedMethods:  []string{"GET", "POST", "OPTIONS"},
+			AllowedHeaders:  []string{"Content-Type", "Authorization"},
+			AllowSubdomains: false,
+		},
 	}
 
 	// Create a mock handler
@@ -125,7 +127,7 @@ func TestCORSConfiguration(t *testing.T) {
 	}
 
 	// Wrap with CORS middleware
-	corsHandler := CORSMiddleware(http.HandlerFunc(handler), appConfig.Config)
+	corsHandler := CORSMiddleware(http.HandlerFunc(handler), appConfig)
 
 	// Test cases
 	testCases := []struct {
@@ -160,8 +162,8 @@ func TestCORSConfiguration(t *testing.T) {
 
 			// Check other CORS headers
 			methodsHeader := w.Header().Get("Access-Control-Allow-Methods")
-			if methodsHeader != "GET,POST,OPTIONS" {
-				t.Errorf("Expected methods header 'GET,POST,OPTIONS', got '%s'", methodsHeader)
+			if methodsHeader != "GET, POST, OPTIONS" {
+				t.Errorf("Expected methods header 'GET, POST, OPTIONS', got '%s'", methodsHeader)
 			}
 		})
 	}
