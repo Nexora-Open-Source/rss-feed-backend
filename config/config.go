@@ -96,7 +96,7 @@ func NewConfig() *Config {
 	environment := getEnv("ENVIRONMENT", "development")
 
 	return &Config{
-		ProjectID:  getEnv("PROJECT_ID", ""),
+		ProjectID:  getEnv("PROJECT_ID", "argon-magnet-442917-k1"),
 		LogLevel:   getEnv("LOG_LEVEL", "info"),
 		ServerPort: getEnv("SERVER_PORT", "8080"),
 		// Rate limiting defaults (10 requests per minute, burst of 5)
