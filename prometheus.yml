@@ -1,0 +1,33 @@
+# Prometheus configuration for RSS Feed Backend monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  - job_name: 'rss-feed-backend'
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+# Example alerting rules (save as alert_rules.yml and uncomment below)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Example recording rules
+# recording_rules:
+#   - name: rss_feed_success_rate
+#     expr: |
+#       sum(rate(rss_feed_fetch_total{status="success"}[5m])) /
+#       sum(rate(rss_feed_fetch_total[5m])) * 100
+#     labels:
+#       service: rss-feed-backend
+#     annotations:
+#       description: "RSS feed success rate over the last 5 minutes"
