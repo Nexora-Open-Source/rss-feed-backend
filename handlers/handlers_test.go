@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"cloud.google.com/go/datastore"
@@ -244,9 +245,9 @@ func TestHandleFetchAndStoreMissingURL(t *testing.T) {
 func TestHandleFetchAndStoreInvalidURL(t *testing.T) {
 	handler, _, _, _ := setupTestHandler(t)
 
-	// Test with invalid URL - will cause decode error
-	req := httptest.NewRequest("POST", "/fetch-store", nil)
-	req.Body = nil // Will cause decode error
+	// Test with invalid URL - create a request with invalid JSON body
+	req := httptest.NewRequest("POST", "/fetch-store", strings.NewReader("invalid json"))
+	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
 	handler.HandleFetchAndStore(w, req)
@@ -260,6 +261,10 @@ func TestHandleGetFeedItems(t *testing.T) {
 	// Mock cache miss
 	mockCache.On("GetStoredItems", mock.Anything).
 		Return([]*utils.FeedItem{}, false)
+
+	// Mock cache set operation
+	mockCache.On("SetStoredItems", mock.Anything, mock.Anything).
+		Return(nil)
 
 	// Mock datastore response
 	mockDatastore.On("GetAll", mock.Anything, mock.Anything, mock.Anything).
