@@ -134,6 +134,10 @@ func (h *Handler) HandleFetchAndStore(w http.ResponseWriter, r *http.Request) {
 
 	// Parse request body
 	var req FetchRequest
+	if r.Body == nil {
+		middleware.RespondBadRequest(w, fmt.Errorf("request body is required"), requestID)
+		return
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		middleware.RespondBadRequest(w, fmt.Errorf("invalid request body: %v", err), requestID)
 		return
